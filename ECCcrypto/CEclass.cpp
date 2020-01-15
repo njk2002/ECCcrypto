@@ -96,7 +96,9 @@ char* intergrateddecrypto(wchar_t* message, wchar_t* key) {
     sodium_base642bin(text, len2, (const char*)text64, strlen(text64), ignore, bin_len, b64_end, sodium_base64_VARIANT_ORIGINAL_NO_PADDING);
     size_t len1 = crypto_secretbox_NONCEBYTES;
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
-    memcpy_s(nonce, len1, text, len1);
+    if (len2 >= 24) {
+        memcpy_s(nonce, len1, text, len1);
+    }
     unsigned char* ciphertext = new unsigned char[len2 - len1];
     memcpy_s(ciphertext, len2 - len1, text + len1, len2 - len1);
     unsigned char* decrypted = new unsigned char[len2 - len1 - crypto_secretbox_MACBYTES];
@@ -112,22 +114,23 @@ char* intergrateddecrypto(wchar_t* message, wchar_t* key) {
 }
 
 
-char* bin2base64(const unsigned char* const bin) {
-    int a = strlen((const char*)bin);
-    int b = a * 4 / 3 + 2;
+char* bin2base64(const unsigned char* const bin, size_t a) {
+    int b = a * 4 / 3 + 5;
     char* b64 = new char[b];
     sodium_bin2base64(b64, b,bin, a,sodium_base64_VARIANT_ORIGINAL_NO_PADDING);
     return b64;
 }
 
 unsigned char* base642bin(const char* const b64) {
-    int a = strlen(b64);
-    int b = a * 3 / 4 + 1;
-    unsigned char* bin = new unsigned char[b];
+    int a = strlen(b64) ;
+    int b = a * 3 / 4 + 2;
+    unsigned char* bin = new unsigned char[b+1];
+    memset(bin, '\0', b + 1);
     int c = sodium_base642bin(bin,b,
         b64, a,
-        NULL, NULL,
+        "", NULL,
         NULL, sodium_base64_VARIANT_ORIGINAL_NO_PADDING);
+    
     return bin;
 }
 

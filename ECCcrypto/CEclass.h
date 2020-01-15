@@ -10,6 +10,6 @@ char* intergratedcrypto(wchar_t* message, wchar_t* key);
 
 char* intergrateddecrypto(wchar_t* message, wchar_t* key);
 
-char* bin2base64(const unsigned char* const bin);
+char* bin2base64(const unsigned char* const bin, size_t a);
 
 unsigned char* base642bin(const char* const b64);

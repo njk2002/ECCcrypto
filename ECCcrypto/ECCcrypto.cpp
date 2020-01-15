@@ -271,8 +271,11 @@ INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         else if (LOWORD(wParam) == IDC_BUTTON2)
         {
-            const char* b64 = "accsdcasdacs";
+            const char* b64 = "accsdcadfassssssssaccsdcadfassssssss";
+
             unsigned char* bin = base642bin(b64);
+            size_t a = strlen((const char*)bin);
+            char* b641 = bin2base64(bin,a);
             return (INT_PTR)TRUE;
         }
         else if (LOWORD(wParam) == IDC_BUTTON3)
