@@ -6,11 +6,14 @@
 #include <iostream>
 #include <windows.h>
 #include <string>
-#include <sodium.h>
+#include "sodium.h"
 #include "CEclass.h"
 #include <fstream>
 
 #pragma comment(lib,"libsodium.lib")
+//这是为了将来调用那个dll
+//下面主要是自动生成的内容
+//注意看第26-32行，160行左右，260行往后
 #pragma once
 #define MAX_LOADSTRING 100
 
@@ -148,6 +151,8 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             case IDM_EXIT:
                 DestroyWindow(hWnd);
                 break;
+            //在此添加你在菜单中加入的选项的消息处理程序
+            //照葫芦画瓢即可，注意(IDD_ENC)和Enc的位置要自定义
             case ID_32771:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_ENC), hWnd, Enc);
                 break;
@@ -256,6 +261,7 @@ INT_PTR CALLBACK Dec(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     return (INT_PTR)FALSE;
 }
 // “测试”框的消息处理程序。
+//这个窗口对应菜单“文件>test”,主要用于测试不成熟功能
 INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
@@ -272,39 +278,28 @@ INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         else if (LOWORD(wParam) == IDC_BUTTON2)
         {
-            /*
-            
-            char* text1 = bin2base64(key,sizeof key);
-            wchar_t* text = CharToWchar_t(text1);
-            SetDlgItemText(hDlg, IDC_EDIT2, text);
-            int b = strlen(text1);
-            unsigned char nonce[crypto_secretbox_NONCEBYTES];
-            unsigned char* bin = base642bin(text1);
-#define MESSAGE ((const unsigned char *) "tessdfsadssat")
-#define MESSAGE_LEN 13
-#define CIPHERTEXT_LEN (crypto_secretbox_MACBYTES + MESSAGE_LEN)
-            unsigned char ciphertext[CIPHERTEXT_LEN];
-            unsigned char ciphertext1[CIPHERTEXT_LEN];
-            randombytes_buf(nonce, sizeof nonce);
-            crypto_secretbox_easy(ciphertext, MESSAGE, MESSAGE_LEN, nonce, key);
-            crypto_secretbox_easy(ciphertext1, MESSAGE, MESSAGE_LEN, nonce, bin);
-            unsigned char decrypted[MESSAGE_LEN];
-            unsigned char decrypted1[MESSAGE_LEN];
-            crypto_secretbox_open_easy(decrypted, ciphertext, CIPHERTEXT_LEN, nonce, key);
-            crypto_secretbox_open_easy(decrypted1, ciphertext1, CIPHERTEXT_LEN, nonce, bin);
-            int a = sodium_memcmp(decrypted1, decrypted1, MESSAGE_LEN);
-            */
             unsigned char key[crypto_secretbox_KEYBYTES];
             crypto_secretbox_keygen(key);
+            //这里我先用的secret key加密（比如AES，但这里不是），因为简单
             wchar_t text[2048];
             GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
-            char* text1 = intergratedcrypto(text,key);
-
-            //wchar_t* display = CharToWchar_t((char*)decrypted1);
-            
-            //SetDlgItemText(hDlg, IDC_EDIT1, display);
-            //
-            
+            //从较大的文本框中获取文字，给了2kb的缓冲区
+            char* text3 = itgcrypto(text,key);
+            //调用自定义的集成加密方法
+            wchar_t* b641 = CharToWchar_t(text3);
+            //纯粹为了适应输入类型而转型
+            unsigned char* text4 = itgdecrypto(b641, key);
+            //调用自定义的集成解密方法
+            size_t len = sLEN(text4);
+            //获得原文的长度
+            unsigned char* text5 = new unsigned char[len+1];
+            text5[len] = '\0';
+            memcpy_s(text5, len, text4+24, len);
+            //把解密结果不属于原文的部分噶掉
+            wchar_t* display = CharToWchar_t((char*)text5);
+            SetDlgItemText(hDlg, IDC_EDIT2, display);
+            //还在大文本框里显示，可能感觉没变，但是实际上是解密后结果
+            //但是输入中文，解密结果就是乱码
             
             
             
@@ -312,6 +307,12 @@ INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         else if (LOWORD(wParam) == IDC_BUTTON3)
         {
+            wchar_t text[2048];
+            GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
+            char* text1 = Wchar_tToChar(text);
+            wchar_t* display = CharToWchar_t(text1);
+            SetDlgItemText(hDlg, IDC_EDIT1, display);
+            //这是用来测试哪个地方不能接受中文的，发现就是wchar和char互转的位置
             return (INT_PTR)TRUE;
         }
         break;

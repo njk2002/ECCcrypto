@@ -6,9 +6,9 @@ wchar_t* multiByteToWideChar(char* pCStrKey);
 
 char* wideCharToMultiByte(wchar_t* pWCStrKey);
 
-char* itgcrypto(wchar_t* message, wchar_t* key);
+char* itgcrypto(wchar_t* message, unsigned char* key);
 
-char* itgdecrypto(wchar_t* message, wchar_t* key);
+unsigned char* itgdecrypto(wchar_t* message, unsigned char* key);
 
 char* bin2base64(const unsigned char* bin, size_t a);
 
@@ -19,3 +19,7 @@ char* randomchar();
 char* cLEN(size_t len);
 
 size_t sLEN(unsigned char* len);
+
+unsigned char* ENC(unsigned char* key, unsigned char* message);
+
+unsigned char* DEC(unsigned char* key, unsigned char* text);
