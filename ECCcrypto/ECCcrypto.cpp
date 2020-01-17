@@ -9,6 +9,7 @@
 #include <sodium.h>
 #include "CEclass.h"
 #include <fstream>
+
 #pragma comment(lib,"libsodium.lib")
 #pragma once
 #define MAX_LOADSTRING 100
@@ -271,11 +272,42 @@ INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         else if (LOWORD(wParam) == IDC_BUTTON2)
         {
-            const char* b64 = "accsdcadfassssssssaccsdcadfassssssss";
+            /*
+            
+            char* text1 = bin2base64(key,sizeof key);
+            wchar_t* text = CharToWchar_t(text1);
+            SetDlgItemText(hDlg, IDC_EDIT2, text);
+            int b = strlen(text1);
+            unsigned char nonce[crypto_secretbox_NONCEBYTES];
+            unsigned char* bin = base642bin(text1);
+#define MESSAGE ((const unsigned char *) "tessdfsadssat")
+#define MESSAGE_LEN 13
+#define CIPHERTEXT_LEN (crypto_secretbox_MACBYTES + MESSAGE_LEN)
+            unsigned char ciphertext[CIPHERTEXT_LEN];
+            unsigned char ciphertext1[CIPHERTEXT_LEN];
+            randombytes_buf(nonce, sizeof nonce);
+            crypto_secretbox_easy(ciphertext, MESSAGE, MESSAGE_LEN, nonce, key);
+            crypto_secretbox_easy(ciphertext1, MESSAGE, MESSAGE_LEN, nonce, bin);
+            unsigned char decrypted[MESSAGE_LEN];
+            unsigned char decrypted1[MESSAGE_LEN];
+            crypto_secretbox_open_easy(decrypted, ciphertext, CIPHERTEXT_LEN, nonce, key);
+            crypto_secretbox_open_easy(decrypted1, ciphertext1, CIPHERTEXT_LEN, nonce, bin);
+            int a = sodium_memcmp(decrypted1, decrypted1, MESSAGE_LEN);
+            */
+            unsigned char key[crypto_secretbox_KEYBYTES];
+            crypto_secretbox_keygen(key);
+            wchar_t text[2048];
+            GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
+            char* text1 = intergratedcrypto(text,key);
 
-            unsigned char* bin = base642bin(b64);
-            size_t a = strlen((const char*)bin);
-            char* b641 = bin2base64(bin,a);
+            //wchar_t* display = CharToWchar_t((char*)decrypted1);
+            
+            //SetDlgItemText(hDlg, IDC_EDIT1, display);
+            //
+            
+            
+            
+            
             return (INT_PTR)TRUE;
         }
         else if (LOWORD(wParam) == IDC_BUTTON3)
