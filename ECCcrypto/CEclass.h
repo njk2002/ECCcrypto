@@ -2,9 +2,9 @@ char* Wchar_tToChar(wchar_t* wchar);
 
 wchar_t* CharToWchar_t(char* psz);
 
-wchar_t* multiByteToWideChar(char* pCStrKey);
+wchar_t* chartowchar(char* pCStrKey);
 
-char* wideCharToMultiByte(wchar_t* pWCStrKey);
+char* wchartochar(wchar_t* pWCStrKey);
 
 char* itgcrypto(wchar_t* message, unsigned char* key);
 

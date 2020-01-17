@@ -6,7 +6,7 @@
 #include <string.h>
 #include "sodium.h"
 #include <CTIME>
-//主要用前两个方法转换宽字节和字节
+//主要用后两个方法转换宽字节和字节
 char* Wchar_tToChar(wchar_t* wchar)
 {
     wchar_t* wText = wchar;
@@ -26,7 +26,7 @@ wchar_t* CharToWchar_t(char* psz)
     MultiByteToWideChar(CP_UTF8, NULL, psz, -1, wText, dwNum);
     return wText;
 }
-wchar_t* multiByteToWideChar(char* pCStrKey)
+wchar_t* chartowchar(char* pCStrKey)
 {
     size_t pSize = MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, strlen(pCStrKey) + 1, NULL, 0);
     wchar_t* pWCStrKey = new wchar_t[pSize];
@@ -34,7 +34,7 @@ wchar_t* multiByteToWideChar(char* pCStrKey)
     MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, strlen(pCStrKey) + 1, pWCStrKey, pSize);
     return pWCStrKey;
 }
-char* wideCharToMultiByte(wchar_t* pWCStrKey)
+char* wchartochar(wchar_t* pWCStrKey)
 {
     //第一次调用确认转换后单字节字符串的长度，用于开辟空间
     size_t pSize = WideCharToMultiByte(CP_OEMCP, 0, pWCStrKey, wcslen(pWCStrKey), NULL, 0, NULL, NULL);
@@ -65,7 +65,7 @@ Define information format before Public Key encryption
 //针对文本框的集成加密方法
 char* itgcrypto(wchar_t* message, unsigned char* key) {
 
-    const unsigned char* Message = (const unsigned char*)Wchar_tToChar(message);
+    const unsigned char* Message = (const unsigned char*)wchartochar(message);
     size_t msglen = strlen((const char*)Message);
     //算算消息长
     char len[24];
@@ -89,7 +89,7 @@ char* itgcrypto(wchar_t* message, unsigned char* key) {
 unsigned char* itgdecrypto(wchar_t* message, unsigned char* key) {
 
 
-    char* text64 = Wchar_tToChar(message);
+    char* text64 = wchartochar(message);
     unsigned char* text = base642bin(text64);
     //从base64转到二进制
     size_t msglen = sLEN(text);

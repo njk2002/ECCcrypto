@@ -276,43 +276,56 @@ INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             EndDialog(hDlg, LOWORD(wParam));
             return (INT_PTR)TRUE;
         }
-        else if (LOWORD(wParam) == IDC_BUTTON2)
+        else if (LOWORD(wParam) == IDC_BUTTON3)
         {
-            unsigned char key[crypto_secretbox_KEYBYTES];
-            crypto_secretbox_keygen(key);
+            wchar_t key1[45];
+            GetDlgItemText(hDlg, IDC_EDIT1, key1, 45);
+            
+            unsigned char* key = (unsigned char*)wchartochar(key1);
             //这里我先用的secret key加密（比如AES，但这里不是），因为简单
             wchar_t text[2048];
             GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
             //从较大的文本框中获取文字，给了2kb的缓冲区
             char* text3 = itgcrypto(text,key);
             //调用自定义的集成加密方法
-            wchar_t* b641 = CharToWchar_t(text3);
-            //纯粹为了适应输入类型而转型
-            unsigned char* text4 = itgdecrypto(b641, key);
-            //调用自定义的集成解密方法
-            size_t len = sLEN(text4);
-            //获得原文的长度
-            unsigned char* text5 = new unsigned char[len+1];
-            text5[len] = '\0';
-            memcpy_s(text5, len, text4+24, len);
-            //把解密结果不属于原文的部分噶掉
-            wchar_t* display = CharToWchar_t((char*)text5);
+            wchar_t* display = chartowchar((char*)text3);
             SetDlgItemText(hDlg, IDC_EDIT2, display);
             //还在大文本框里显示，可能感觉没变，但是实际上是解密后结果
-            //但是输入中文，解密结果就是乱码
+            
             
             
             
             return (INT_PTR)TRUE;
         }
-        else if (LOWORD(wParam) == IDC_BUTTON3)
+        else if (LOWORD(wParam) == IDC_BUTTON2)
         {
-            wchar_t text[2048];
-            GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
-            char* text1 = Wchar_tToChar(text);
-            wchar_t* display = CharToWchar_t(text1);
+            unsigned char key[crypto_secretbox_KEYBYTES];
+            crypto_secretbox_keygen(key);
+            char* b64 = bin2base64(key, crypto_secretbox_KEYBYTES);
+            wchar_t* display = chartowchar(b64);
             SetDlgItemText(hDlg, IDC_EDIT1, display);
             //这是用来测试哪个地方不能接受中文的，发现就是wchar和char互转的位置
+            return (INT_PTR)TRUE;
+        }
+        else if (LOWORD(wParam) == IDC_BUTTON4)
+        {
+            wchar_t key1[45];
+            GetDlgItemText(hDlg, IDC_EDIT1, key1, 45);
+
+            unsigned char* key = (unsigned char*)wchartochar(key1);
+            //这里我先用的secret key加密（比如AES，但这里不是），因为简单
+            wchar_t text[2048];
+            GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
+            unsigned char* text4 = itgdecrypto(text, key);
+            size_t len = sLEN(text4);
+            //获得原文的长度
+            unsigned char* text5 = new unsigned char[len + 1];
+            text5[len] = '\0';
+            memcpy_s(text5, len, text4 + 24, len);
+            //把解密结果不属于原文的部分噶掉
+            wchar_t* display = chartowchar((char*)text5);
+            SetDlgItemText(hDlg, IDC_EDIT2, display);
+            //还在大文本框里显示，可能感觉没变，但是实际上是解密后结果
             return (INT_PTR)TRUE;
         }
         break;
