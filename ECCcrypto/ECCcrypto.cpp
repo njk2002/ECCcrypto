@@ -27,8 +27,7 @@ ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    Enc(HWND, UINT, WPARAM, LPARAM);
-INT_PTR CALLBACK    Dec(HWND, UINT, WPARAM, LPARAM);
+INT_PTR CALLBACK    SKTextDEnc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    Test(HWND, UINT, WPARAM, LPARAM);
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
@@ -154,10 +153,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
             //在此添加你在菜单中加入的选项的消息处理程序
             //照葫芦画瓢即可，注意(IDD_ENC)和Enc的位置要自定义
             case ID_32771:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_ENC), hWnd, Enc);
-                break;
-            case ID_32772:
-                DialogBox(hInst, MAKEINTRESOURCE(IDD_DEC), hWnd, Dec);
+                DialogBox(hInst, MAKEINTRESOURCE(IDD_ENC), hWnd, SKTextDEnc);
                 break;
             case ID_32773:
                 DialogBox(hInst, MAKEINTRESOURCE(IDD_TEST), hWnd, Test);
@@ -203,8 +199,8 @@ INT_PTR CALLBACK About(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
     }
     return (INT_PTR)FALSE;
 }
-// “加密”框的消息处理程序。
-INT_PTR CALLBACK Enc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
+// “Chacha20”框的消息处理程序。
+INT_PTR CALLBACK SKTextDEnc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
 {
     UNREFERENCED_PARAMETER(lParam);
     switch (message)
@@ -222,44 +218,57 @@ INT_PTR CALLBACK Enc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         {    //genkey
             unsigned char key[crypto_secretbox_KEYBYTES];
             crypto_secretbox_keygen(key);
+            char* b64 = bin2base64(key, crypto_secretbox_KEYBYTES);
+            wchar_t* display = chartowchar(b64);
+            SetDlgItemText(hDlg, IDC_EDIT1, display);
 
             return (INT_PTR)TRUE;
         }
         else if (LOWORD(wParam) == IDC_BUTTON3)
         {
+            wchar_t key1[45];
+            GetDlgItemText(hDlg, IDC_EDIT1, key1, 45);
+
+            char* key2 = wchartochar(key1);
+            unsigned char* key = base642bin(key2);
+            //这里我先用的secret key加密（比如AES，但这里不是），因为简单
+            wchar_t text[2048];
+            GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
+            //从较大的文本框中获取文字，给了2kb的缓冲区
+            char* text3 = itgcrypto(text, key);
+            //调用自定义的集成加密方法
+            wchar_t* display = chartowchar((char*)text3);
+            SetDlgItemText(hDlg, IDC_EDIT2, display);
+            //还在大文本框里显示，可能感觉没变，但是实际上是解密后结果
+            return (INT_PTR)TRUE;
+        }
+        else if (LOWORD(wParam) == IDC_BUTTON4)
+        {
+            wchar_t key1[45];
+            GetDlgItemText(hDlg, IDC_EDIT1, key1, 45);
+
+            char* key2 = wchartochar(key1);
+            unsigned char* key = base642bin(key2);
+            //这里我先用的secret key加密（比如AES，但这里不是），因为简单
+            wchar_t text[2048];
+            GetDlgItemText(hDlg, IDC_EDIT2, text, 2048);
+            unsigned char* text4 = itgdecrypto(text, key);
+            size_t len = sLEN(text4);
+            //获得原文的长度
+            unsigned char* text5 = new unsigned char[len + 1];
+            text5[len] = '\0';
+            memcpy_s(text5, len, text4 + 24, len);
+            //把解密结果不属于原文的部分噶掉
+            wchar_t* display = chartowchar((char*)text5);
+            SetDlgItemText(hDlg, IDC_EDIT2, display);
+            //还在大文本框里显示，可能感觉没变，但是实际上是解密后结果
             return (INT_PTR)TRUE;
         }
         break;
     }
     return (INT_PTR)FALSE;
 }
-// “解密”框的消息处理程序。
-INT_PTR CALLBACK Dec(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
-{
-    UNREFERENCED_PARAMETER(lParam);
-    switch (message)
-    {
-    case WM_INITDIALOG:
-        return (INT_PTR)TRUE;
 
-    case WM_COMMAND:
-        if (LOWORD(wParam) == IDC_BUTTON1 || LOWORD(wParam) == IDCANCEL)
-        {
-            EndDialog(hDlg, LOWORD(wParam));
-            return (INT_PTR)TRUE;
-        }
-        else if (LOWORD(wParam) == IDC_BUTTON2)
-        {
-            return (INT_PTR)TRUE;
-        }
-        else if (LOWORD(wParam) == IDC_BUTTON3)
-        {
-            return (INT_PTR)TRUE;
-        }
-        break;
-    }
-    return (INT_PTR)FALSE;
-}
 // “测试”框的消息处理程序。
 //这个窗口对应菜单“文件>test”,主要用于测试不成熟功能
 INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
@@ -291,10 +300,6 @@ INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
             wchar_t* display = chartowchar((char*)text3);
             SetDlgItemText(hDlg, IDC_EDIT2, display);
             //还在大文本框里显示，可能感觉没变，但是实际上是解密后结果
-            
-            
-            
-            
             return (INT_PTR)TRUE;
         }
         else if (LOWORD(wParam) == IDC_BUTTON2)

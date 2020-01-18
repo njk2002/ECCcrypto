@@ -69,16 +69,16 @@ char* itgcrypto(wchar_t* message, unsigned char* key) {
     size_t msglen = strlen((const char*)Message);
     //算算消息长
     char len[24];
-    sprintf_s(len, "%ulld", msglen);
+    sprintf_s(len, "%zu", msglen);
     
     unsigned char* input = new unsigned char[msglen + 24];
     memcpy_s(input, msglen + 24, len, 24);
-    //把消息长放到char[]里并跟消息长合并
+    //把消息长放到char[]里并跟消息合并
     memcpy_s(input+24, msglen + 24, Message, msglen);
     //准备好喂给更低一级加密模块的数据
     unsigned char* encrypted = ENC(key, input);
 
-    char* b64 = bin2base64(encrypted, msglen+24+ crypto_secretbox_NONCEBYTES+ crypto_secretbox_MACBYTES);
+    char* b64 = bin2base64(encrypted, msglen+24+ crypto_secretbox_NONCEBYTES+ crypto_secretbox_MACBYTES + crypto_secretbox_MACBYTES);
     //把密文转成base64编码
 
     delete[] encrypted;
@@ -92,16 +92,23 @@ unsigned char* itgdecrypto(wchar_t* message, unsigned char* key) {
     char* text64 = wchartochar(message);
     unsigned char* text = base642bin(text64);
     //从base64转到二进制
-    size_t msglen = sLEN(text);
-    //获得原文长
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
-    memcpy_s(nonce, crypto_secretbox_NONCEBYTES, text+24, crypto_secretbox_NONCEBYTES);
+    unsigned char lencip[24 + crypto_secretbox_MACBYTES];
+    memcpy_s(nonce, crypto_secretbox_NONCEBYTES, text + 24 + crypto_secretbox_MACBYTES, crypto_secretbox_NONCEBYTES);
+    memcpy_s(lencip, 24 + crypto_secretbox_MACBYTES, text, 24 + crypto_secretbox_MACBYTES);
+    unsigned char len[24];
+    crypto_secretbox_open_easy(len, lencip, 24 + crypto_secretbox_MACBYTES, nonce, key);
+    size_t msglen = sLEN(len);
+    //获得原文长
+   
     unsigned char* ciphertext = new unsigned char[msglen + crypto_secretbox_MACBYTES];
-    memcpy_s(ciphertext, msglen + crypto_secretbox_MACBYTES, text +24+ crypto_secretbox_NONCEBYTES, msglen + crypto_secretbox_MACBYTES);
+    memcpy_s(ciphertext, msglen + crypto_secretbox_MACBYTES, text +crypto_secretbox_MACBYTES +24+ crypto_secretbox_NONCEBYTES, msglen + crypto_secretbox_MACBYTES);
     unsigned char* decrypted = new unsigned char[msglen+24];
-    memcpy_s(decrypted, msglen + 24, text, 24);
+    unsigned char* decrypted1 = new unsigned char[msglen];
+    memcpy_s(decrypted, msglen + 24, len, 24);
     //把nonce，密文准备好，在解密结果之前加上原文长
-    crypto_secretbox_open_easy(decrypted+24, ciphertext, msglen + crypto_secretbox_MACBYTES, nonce, key);
+    crypto_secretbox_open_easy(decrypted1, ciphertext, msglen + crypto_secretbox_MACBYTES, nonce, key);
+    memcpy_s(decrypted+24, msglen + 24, decrypted1, msglen);
     //解密
 
 
@@ -133,7 +140,7 @@ unsigned char* base642bin(const char* b64) {
     
     return bin;
 }
-
+/*
 //随机24字节字符串产生器（来自网络）
 char* randomchar() {
     const int SIZE_CHAR = 24;
@@ -156,26 +163,26 @@ char* randomchar() {
     }
     return ch;
 }
-
+*/
 //低级加密方法
 unsigned char* ENC(unsigned char* key, unsigned char* message) {
     size_t msglen = sLEN(message);
     //获得原长
     size_t ciplen = msglen + crypto_secretbox_MACBYTES;
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
-    unsigned char* ciphertext = new unsigned char[ciplen];
     randombytes_buf(nonce, sizeof nonce);
-    crypto_secretbox_easy(ciphertext, message+24, msglen, nonce, key);
-    size_t totallen = crypto_secretbox_NONCEBYTES + ciplen + 24;
-    unsigned char* text = new unsigned char[totallen];
-    char len[24];
-    sprintf_s(len, "%ulld", msglen);
+    unsigned char* ciphertext = new unsigned char[ciplen];
+    unsigned char lencip[24 + crypto_secretbox_MACBYTES];
+    crypto_secretbox_easy(lencip, message, 24, nonce, key);
     
-    memcpy_s(text, totallen, len, 24);
+    crypto_secretbox_easy(ciphertext, message+24, msglen, nonce, key);
+    size_t totallen = crypto_secretbox_NONCEBYTES + ciplen + 24 + crypto_secretbox_MACBYTES;
+    unsigned char* text = new unsigned char[totallen];
+    memcpy_s(text, totallen, lencip, 24 + crypto_secretbox_MACBYTES);
     //把原长和密文合并
-    memcpy_s(text + 24, totallen, nonce, crypto_secretbox_NONCEBYTES);
+    memcpy_s(text + 24 + crypto_secretbox_MACBYTES, totallen, nonce, crypto_secretbox_NONCEBYTES);
     //把nonce和密文合并
-    memcpy_s(text + 24 + crypto_secretbox_NONCEBYTES, totallen, ciphertext, ciplen);
+    memcpy_s(text + 24 + crypto_secretbox_MACBYTES + crypto_secretbox_NONCEBYTES, totallen, ciphertext, ciplen);
     //把密文最后缀上
     delete[] ciphertext;
 
@@ -187,15 +194,15 @@ unsigned char* ENC(unsigned char* key, unsigned char* message) {
 //几十TB数据的大小
 char* cLEN(size_t len) {
     char len1[24];
-    size_t len2 = len;
-    sprintf_s(len1, "%ulld", len2);
-    return len1;
+    sprintf_s(len1, "%zu", len);
+    char* len2 = len1;
+    return len2;
 }
 
 //char* 转回size_t
 size_t sLEN(unsigned char* len) {
     size_t len1 = 0;
-    for (int i = 0; i < 24 && len[i] != 'l'; i++) {
+    for (int i = 0; i < 24 && len[i] != '\0'; i++) {
         len1 = len1 * 10 + len[i] - 48;
     }
     return len1;
