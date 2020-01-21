@@ -5,7 +5,9 @@
 #include "CEclass.h"
 #include <string.h>
 #include "sodium.h"
+#include <fstream>
 #include <CTIME>
+#include <time.h>
 //主要用后两个方法转换宽字节和字节
 char* Wchar_tToChar(wchar_t* wchar)
 {
@@ -64,7 +66,6 @@ Define information format before Public Key encryption
 
 //针对文本框的集成加密方法
 char* itgcrypto(wchar_t* message, unsigned char* key) {
-
     const unsigned char* Message = (const unsigned char*)wchartochar(message);
     size_t msglen = strlen((const char*)Message);
     //算算消息长
@@ -77,10 +78,9 @@ char* itgcrypto(wchar_t* message, unsigned char* key) {
     memcpy_s(input+24, msglen + 24, Message, msglen);
     //准备好喂给更低一级加密模块的数据
     unsigned char* encrypted = ENC(key, input);
-
     char* b64 = bin2base64(encrypted, msglen+24+ crypto_secretbox_NONCEBYTES+ crypto_secretbox_MACBYTES + crypto_secretbox_MACBYTES);
     //把密文转成base64编码
-
+    delete[] Message;
     delete[] encrypted;
     delete[] input;
     return b64;
@@ -98,20 +98,18 @@ unsigned char* itgdecrypto(wchar_t* message, unsigned char* key) {
     memcpy_s(lencip, 24 + crypto_secretbox_MACBYTES, text, 24 + crypto_secretbox_MACBYTES);
     unsigned char len[24];
     crypto_secretbox_open_easy(len, lencip, 24 + crypto_secretbox_MACBYTES, nonce, key);
-    size_t msglen = sLEN(len);
+    size_t msglen = sLEN(len,24);
     //获得原文长
    
     unsigned char* ciphertext = new unsigned char[msglen + crypto_secretbox_MACBYTES];
     memcpy_s(ciphertext, msglen + crypto_secretbox_MACBYTES, text +crypto_secretbox_MACBYTES +24+ crypto_secretbox_NONCEBYTES, msglen + crypto_secretbox_MACBYTES);
     unsigned char* decrypted = new unsigned char[msglen+24];
-    unsigned char* decrypted1 = new unsigned char[msglen];
     memcpy_s(decrypted, msglen + 24, len, 24);
     //把nonce，密文准备好，在解密结果之前加上原文长
-    crypto_secretbox_open_easy(decrypted1, ciphertext, msglen + crypto_secretbox_MACBYTES, nonce, key);
-    memcpy_s(decrypted+24, msglen + 24, decrypted1, msglen);
+    crypto_secretbox_open_easy(decrypted+24, ciphertext, msglen + crypto_secretbox_MACBYTES, nonce, key);
     //解密
 
-
+    delete[] text64;
     delete[] text;
     delete[] ciphertext;
     return decrypted;
@@ -166,7 +164,7 @@ char* randomchar() {
 */
 //低级加密方法
 unsigned char* ENC(unsigned char* key, unsigned char* message) {
-    size_t msglen = sLEN(message);
+    size_t msglen = sLEN(message,24);
     //获得原长
     size_t ciplen = msglen + crypto_secretbox_MACBYTES;
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
@@ -185,7 +183,6 @@ unsigned char* ENC(unsigned char* key, unsigned char* message) {
     memcpy_s(text + 24 + crypto_secretbox_MACBYTES + crypto_secretbox_NONCEBYTES, totallen, ciphertext, ciplen);
     //把密文最后缀上
     delete[] ciphertext;
-
     return text;
 }
 
@@ -200,9 +197,9 @@ char* cLEN(size_t len) {
 }
 
 //char* 转回size_t
-size_t sLEN(unsigned char* len) {
+size_t sLEN(unsigned char* len,size_t lenlen) {
     size_t len1 = 0;
-    for (int i = 0; i < 24 && len[i] != '\0'; i++) {
+    for (int i = 0; i < lenlen && len[i] != '\0'; i++) {
         len1 = len1 * 10 + len[i] - 48;
     }
     return len1;
@@ -211,7 +208,7 @@ size_t sLEN(unsigned char* len) {
 //低级解密方法
 unsigned char* DEC(unsigned char* key, unsigned char* text) {
 
-    size_t msglen = sLEN(text);
+    size_t msglen = sLEN(text,24);
     unsigned char nonce[crypto_secretbox_NONCEBYTES];
     size_t ciplen = msglen + crypto_secretbox_MACBYTES;
     unsigned char* ciphertext = new unsigned char[ciplen];
@@ -225,7 +222,17 @@ unsigned char* DEC(unsigned char* key, unsigned char* text) {
     return decrypted;
 }
 
+long getFileSize6(const char* strFileName)
+{
+    std::ifstream in;
+    in.open(strFileName, std::ios::binary);
+    if (!in.is_open())
+        return 0;
 
-
+    in.seekg(0, std::ios_base::end);
+    std::streampos sp = in.tellg();
+    in.close();
+    return sp;
+}
 
 
