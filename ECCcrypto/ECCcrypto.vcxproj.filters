@@ -30,9 +30,6 @@
     <ClInclude Include="ECCcrypto.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="CEclass.h">
-      <Filter>头文件</Filter>
-    </ClInclude>
     <ClInclude Include="sodium\core.h">
       <Filter>头文件\Sodium</Filter>
     </ClInclude>
@@ -219,15 +216,45 @@
     <ClInclude Include="sodium\version.h">
       <Filter>头文件\Sodium</Filter>
     </ClInclude>
+    <ClInclude Include="SmallTools.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="EncAndDec.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="base58.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="zxcvbn.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
     <ClInclude Include="sodium.h">
-      <Filter>头文件\Sodium</Filter>
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="blake2.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="blake2-impl.h">
+      <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="ECCcrypto.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="CEclass.cpp">
+    <ClCompile Include="zxcvbn.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="EncAndDec.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="base58.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="blake2s-ref.c">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="SmallTools.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>

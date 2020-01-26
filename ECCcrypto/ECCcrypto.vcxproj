@@ -148,7 +148,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClInclude Include="CEclass.h" />
+    <ClInclude Include="base58.h" />
+    <ClInclude Include="blake2-impl.h" />
+    <ClInclude Include="blake2.h" />
+    <ClInclude Include="EncAndDec.h" />
+    <ClInclude Include="SmallTools.h" />
     <ClInclude Include="ECCcrypto.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
@@ -216,10 +220,15 @@
     <ClInclude Include="sodium\utils.h" />
     <ClInclude Include="sodium\version.h" />
     <ClInclude Include="targetver.h" />
+    <ClInclude Include="zxcvbn.h" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="CEclass.cpp" />
+    <ClCompile Include="base58.cpp" />
+    <ClCompile Include="blake2s-ref.c" />
+    <ClCompile Include="EncAndDec.cpp" />
+    <ClCompile Include="SmallTools.cpp" />
     <ClCompile Include="ECCcrypto.cpp" />
+    <ClCompile Include="zxcvbn.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="ECCcrypto.rc" />

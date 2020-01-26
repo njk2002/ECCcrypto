@@ -6,9 +6,7 @@ wchar_t* chartowchar(char* pCStrKey);
 
 char* wchartochar(wchar_t* pWCStrKey);
 
-char* itgcrypto(wchar_t* message, unsigned char* key);
-
-unsigned char* itgdecrypto(wchar_t* message, unsigned char* key);
+void TrimSpace(char* str);
 
 char* bin2base64(const unsigned char* bin, size_t a);
 
@@ -16,12 +14,14 @@ unsigned char* base642bin(const char* b64);
 
 //char* randomchar();
 
-char* cLEN(size_t len);
+//char* cLEN(size_t len);
 
 size_t sLEN(unsigned char* len, size_t lenlen);
 
-unsigned char* ENC(unsigned char* key, unsigned char* message);
-
-unsigned char* DEC(unsigned char* key, unsigned char* text);
+wchar_t* getFileName();
 
 long getFileSize6(const char* strFileName);
+
+char** split(char str[], const char* delim);
+
+uint8_t* scrypt_mini(uint8_t* psw, size_t pswlen, uint8_t* salt, size_t saltlen)
