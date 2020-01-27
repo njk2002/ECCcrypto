@@ -11,14 +11,12 @@
 #include "SmallTools.h"
 #include "EncAndDec.h"
 #include <fstream>
-#include <time.h>
 #include "zxcvbn.h"
 #include <Commdlg.h>
 #include "resource.h"
 #include "base58.h"
 #include "blake2.h"
 #include "blake2-impl.h"
-#include <iomanip>
 
 #pragma comment(lib,"libsodium.lib")
 //这是为了将来调用那个dll
@@ -31,9 +29,8 @@
 HINSTANCE hInst;                                // 当前实例
 WCHAR szTitle[MAX_LOADSTRING];                  // 标题栏文本
 WCHAR szWindowClass[MAX_LOADSTRING];            // 主窗口类名
-unsigned char prikey[32] = { '\0' };
 int count = 0;
-
+unsigned char* prikey;
 // 此代码模块中包含的函数的前向声明:
 ATOM                MyRegisterClass(HINSTANCE hInstance);
 BOOL                InitInstance(HINSTANCE, int);
@@ -51,7 +48,9 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 {
     UNREFERENCED_PARAMETER(hPrevInstance);
     UNREFERENCED_PARAMETER(lpCmdLine);
-
+    sodium_init();
+    prikey = (unsigned char*)sodium_malloc(32);
+    int g = sodium_mprotect_noaccess(prikey);
     // TODO: 在此处放置代码。
 
     // 初始化全局字符串
@@ -372,7 +371,9 @@ INT_PTR CALLBACK PKFileDEnc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
             unsigned char noncehead[crypto_box_NONCEBYTES];
             unsigned char noncefile[crypto_box_NONCEBYTES];
             unsigned char pk[32];
+            sodium_mprotect_readonly(prikey);
             crypto_scalarmult_base(pk, prikey);
+            sodium_mprotect_noaccess(prikey);
 
             std::ifstream op;
             std::ofstream wr;
@@ -425,8 +426,10 @@ INT_PTR CALLBACK PKFileDEnc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                 memcpy_s(temp+32,56,noncefile, 24);
                 //sdf = bin2base64(noncefile, 24);
                 unsigned char temp1[72];
+                sodium_mprotect_readonly(prikey);
                 crypto_box_easy(temp1, temp, 56, noncehead,
                     base642bin(pksplit[n]), prikey);
+                sodium_mprotect_noaccess(prikey);
                 unsigned char temp2[72+32+32+136];
                 memcpy_s(temp2, 136, temp1, 72);
                 memcpy_s(temp2+72,136,pk, 32);
@@ -443,9 +446,6 @@ INT_PTR CALLBACK PKFileDEnc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                 n++;
             }
             //这里我先用的secret key加密（比如AES，但这里不是），因为简单
-            for (int i = 0; i <= 21; i++) {
-                delete[] pksplit[i];
-            }
             delete[] pksplit;
 
             unsigned long long i = 0;
@@ -524,7 +524,9 @@ INT_PTR CALLBACK PKFileDEnc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                 unsigned char temp1[152];
                 op1.read((char*)temp1, 152);
                 unsigned char temp2[136];
+                sodium_mprotect_readonly(prikey);
                 int h =crypto_box_open_easy(temp2, temp1, 152, nonce1, ephpublickey1, prikey);
+
                 if (h != 0) {
                     sig = 1;
                 }
@@ -559,6 +561,7 @@ INT_PTR CALLBACK PKFileDEnc(HWND hDlg, UINT message, WPARAM wParam, LPARAM lPara
                     ui--;
                 }
             }
+            sodium_mprotect_noaccess(prikey);
             if (sig == 1) {
                 MessageBox(NULL, TEXT("你不是文件收件人或文件头已损坏"), NULL, MB_ICONERROR); return (INT_PTR)TRUE;
             }
@@ -620,171 +623,16 @@ INT_PTR CALLBACK Test(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam)
         }
         /*else if (LOWORD(wParam) == IDC_BUTTON2)
         {
-            tagOFNW ofn = { 0 };
-            TCHAR strFilename[MAX_PATH] = { 0 };//用于接收文件名
-            ofn.lStructSize = sizeof(OPENFILENAME);//结构体大小
-            ofn.hwndOwner = NULL;//拥有着窗口句柄，为NULL表示对话框是非模态的，实际应用中一般都要有这个句柄
-            ofn.lpstrFilter = TEXT("所有文件\0*.*\0\0");//设置过滤
-            ofn.nFilterIndex = 1;//过滤器索引
-            ofn.lpstrFile = strFilename;//接收返回的文件名，注意第一个字符需要为NULL
-            ofn.nMaxFile = sizeof(strFilename);//缓冲区长度
-            ofn.lpstrInitialDir = NULL;//初始目录为默认
-            ofn.lpstrTitle = TEXT("选择要加密的文件");//使用系统默认标题留空即可
-            ofn.Flags = OFN_FILEMUSTEXIST | OFN_PATHMUSTEXIST | OFN_HIDEREADONLY;//文件、目录必须存在，隐藏只读选项
-            GetOpenFileName(&ofn);
-            SetDlgItemText(hDlg, IDC_EDIT2, strFilename);
-            return (INT_PTR)TRUE;
+           
         }
         else if (LOWORD(wParam) == IDC_BUTTON3)
         {
-            wchar_t perpubkey[2048];
-            GetDlgItemText(hDlg, IDC_EDIT3, perpubkey, 2048);
-            char* pubkey2 = wchartochar(perpubkey);
-            unsigned char* pubkey = base642bin(pubkey2);
-            unsigned char ephpublickey[crypto_box_PUBLICKEYBYTES];
-            unsigned char ephsecretkey[crypto_box_SECRETKEYBYTES];
-            crypto_box_keypair(ephpublickey, ephsecretkey);
-            unsigned char nonce[crypto_box_NONCEBYTES];
-            randombytes_buf(nonce, sizeof nonce);
-
-
-            wchar_t text14[300];
-            GetDlgItemText(hDlg, IDC_EDIT2, text14, 300);
-            //从较大的文本框中获取文字，给了2kb的缓冲区
-            unsigned char key[crypto_secretbox_KEYBYTES];
-            crypto_secretbox_keygen(key);
-            char* text16 = wchartochar(text14);
-            TrimSpace(text16);
-            const char* text = text16;
-            size_t len = strlen(text);
-            char* text2 = new char[len + 5];
-            const char* text4 = ".enc";
-            memcpy_s(text2, len + 5, text, len);
-            memcpy_s(text2 + len, len + 5, text4, 5);
-            long long len2 = getFileSize6(text);
-            unsigned char ciphertext[32 + 16];
-            int g = crypto_box_easy(ciphertext, key, 32, nonce,
-                pubkey, ephsecretkey);
-
-            char len4[24];
-            sprintf_s(len4, "%lld", len2);
-
-            std::ifstream op;
-            std::ofstream wr;
-            op.open(text, std::ios::binary);
-            wr.open(text2, std::ios::binary);
-            wr.write((const char*)ephpublickey, 32);
-            wr.write((const char*)nonce, 24);
-            wr.write((const char*)ciphertext, 48);
-            wr.write((const char*)len4, 24);
-
-
-            int i = 0;
-            if (10240 <= len2) {
-                char* text6 = new char[10240];
-                unsigned char* text8 = new unsigned char[10256];
-                for (i = 0; i * (size_t)10240 + (size_t)10240 <= (size_t)len2; i++) {
-
-                    op.read(text6, 10240);
-                    int s = crypto_secretbox_easy(text8, (unsigned char*)text6, 10240, nonce, key);
-                    sodium_increment(nonce, crypto_box_NONCEBYTES);
-                    wr.write((const char*)text8, 10256);
-
-                }
-                delete[] text8;
-                delete[] text6;
-                int test = len2 % 10240;
-                char* text10 = new char[len2 % 10240];
-                op.read(text10, len2 % 10240);
-                unsigned char* text12 = new unsigned char[len2 % 10240 + 16];
-                int s = crypto_secretbox_easy(text12, (unsigned char*)text10, len2 % 10240, nonce, key);
-                wr.write((const char*)text12, (len2 % 10240) + 16);
-                op.close();
-                wr.close();
-                delete[] text12;
-                delete[] text10;
-
-            }
-            else {
-                char* text6 = new char[len2 % 10240];
-                op.read(text6, len2 % 10240);
-                unsigned char* text8 = new unsigned char[len2 % 10240 + 16];
-                int s = crypto_secretbox_easy(text8, (unsigned char*)text6, len2 % 10240, nonce, key);
-                wr.write((const char*)text8, (len2 % 10240) + 16);
-                op.close();
-                wr.close();
-                delete[] text8;
-                delete[] text6;
-            }
-
-            delete[] text2, pubkey2, pubkey, text16;
-            return (INT_PTR)TRUE;
+            
         }
         else if (LOWORD(wParam) == IDC_BUTTON4)
         {
-            wchar_t text13[2048];
-            GetDlgItemText(hDlg, IDC_EDIT2, text13, 2048);
-            char* text15 = wchartochar(text13);
-            TrimSpace(text15);
-
-            const char* text1 = text15;
-            size_t len5 = strlen(text1);
-            char* text3 = new char[len5];
-            memset(text3, '\0', len5);
-            memcpy_s(text3, len5, text1, len5 - 4);
-
-            std::ifstream op1;
-            std::ofstream wr1;
-            op1.open(text1, std::ios::binary);
-            wr1.open(text3, std::ios::binary);
-            char len1[8];
-            op1.read(len1, 8);
-            if(len1 != "eccRypto")
-            unsigned char ephpublickey1[crypto_box_PUBLICKEYBYTES];
-            unsigned char nonce1[crypto_box_NONCEBYTES];
-            unsigned char key1[crypto_secretbox_KEYBYTES];
-            unsigned char keycip[48];
-            //op1.read((char*)ephpublickey1, 32);
-            op1.read((char*)nonce1, 24);
-            op1.read((char*)keycip, 48);
-            op1.read((char*)len1, 24);
-            size_t len3 = sLEN((unsigned char*)len1, 24);
-            //crypto_box_open_easy(key1, keycip, 48, nonce1, ephpublickey1, prikey);
-            size_t i1 = 0;
-            if (10240 <= len3) {
-                char* text5 = new char[10256];
-                unsigned char* text7 = new unsigned char[10240];
-                for (i1 = 0; i1 * (size_t)10240 + (size_t)10240 <= len3; i1++) {
-
-                    op1.read(text5, 10256);
-
-                    crypto_secretbox_open_easy(text7, (unsigned char*)text5, 10256, nonce1, key1);
-                    sodium_increment(nonce1, crypto_box_NONCEBYTES);
-                    wr1.write((const char*)text7, 10240);
-
-                }
-                delete[] text5, text7;
-                char* text9 = new char[len3 % 10240 + 16];
-                op1.read(text9, len3 % 10240 + 16);
-                unsigned char* text11 = new unsigned char[len3 % 10240];
-                crypto_secretbox_open_easy(text11, (unsigned char*)text9, len3 % 10240 + 16, nonce1, key1);
-                wr1.write((const char*)text11, len3 % 10240);
-                delete[] text9, text11;
-            }
-            else {
-                char* text5 = new char[len3 % 10240 + 16];
-                op1.read(text5, len3 % 10240 + 16);
-                unsigned char* text7 = new unsigned char[len3 % 10240];
-                crypto_secretbox_open_easy(text7, (unsigned char*)text5, len3 % 10240 + 16, nonce1, key1);
-                wr1.write((const char*)text7, len3 % 10240);
-                delete[] text5, text7;
-            }
-
-
-            //还在大文本框里显示，可能感觉没变，但是实际上是解密后结果
-            delete[] text15, text3;
-
-            return (INT_PTR)TRUE;*/
+            return (INT_PTR)TRUE;
+        }*/
         
     }
     return (INT_PTR)FALSE;
@@ -797,13 +645,16 @@ INT_PTR CALLBACK  GenKey(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
     case WM_INITDIALOG:
         if (count != 0) {
             unsigned char pk[32];
+            sodium_mprotect_readonly(prikey);
             crypto_scalarmult_base(pk, prikey);
+            sodium_mprotect_noaccess(prikey);
             //uint8_t crc[1];
             //blake2s(crc, 1, pk, 32, NULL, 0);
             //memcpy_s(pk + 32, 33, crc, 1);
             char* pkb64 = bin2base64(pk, 32);
             wchar_t* pk1 = chartowchar(pkb64);
             SetDlgItemText(hDlg, IDC_EDIT5, pk1);
+            delete[] pkb64, pk1;
             SetDlgItemText(hDlg, IDC_EDIT4, L"这是你原先的公钥");
         }
         return (INT_PTR)TRUE;
@@ -839,6 +690,7 @@ INT_PTR CALLBACK  GenKey(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
                     sprintf_s(ent, "%f", entro);
                     wchar_t* show1 = chartowchar(ent);
                     SetDlgItemText(hDlg, IDC_EDIT5, show1);
+                    delete[] show1,pass;
                     SetDlgItemText(hDlg, IDC_EDIT4, L"上面是熵值，熵值太小，密码强度不够");
                 }
                 else {
@@ -846,7 +698,7 @@ INT_PTR CALLBACK  GenKey(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
                     GetDlgItemText(hDlg, IDC_EDIT1, wemail, 100);
                     char* email = wchartochar(wemail);
                     TrimSpace(email);
-                    uint8_t* pri = new uint8_t[32];
+                    uint8_t pri[32];
                     unsigned char pk[32];
                     /*if (mini == TRUE) {
                         pri = scrypt_mini((uint8_t*)pass, strlen(pass), (uint8_t*)email,strlen(email));
@@ -874,11 +726,14 @@ INT_PTR CALLBACK  GenKey(HWND hDlg, UINT message, WPARAM wParam, LPARAM lParam) 
                     wchar_t* pk1 = chartowchar((char*)pk64);
                     SetDlgItemText(hDlg, IDC_EDIT5, pk1);
                     SetDlgItemText(hDlg, IDC_EDIT4, L"创建成功");
+                    sodium_mprotect_readwrite(prikey);
                     for (int g = 0; g < 32; g++) {
                         prikey[g] = pri[g];
                     }
+                    sodium_mprotect_noaccess(prikey);
                     count++;
-                    delete[] pri;
+                    sodium_stackzero(2000);
+                    delete[] pass,pk1,pk64;
                 }
             }
             else{
