@@ -151,11 +151,12 @@
     <ClInclude Include="base58.h" />
     <ClInclude Include="blake2-impl.h" />
     <ClInclude Include="blake2.h" />
-    <ClInclude Include="EncAndDec.h" />
-    <ClInclude Include="SmallTools.h" />
+    <ClInclude Include="dict-src.h" />
     <ClInclude Include="ECCcrypto.h" />
+    <ClInclude Include="EncAndDec.h" />
     <ClInclude Include="framework.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="SmallTools.h" />
     <ClInclude Include="sodium.h" />
     <ClInclude Include="sodium\core.h" />
     <ClInclude Include="sodium\crypto_aead_aes256gcm.h" />
@@ -225,9 +226,9 @@
   <ItemGroup>
     <ClCompile Include="base58.cpp" />
     <ClCompile Include="blake2s-ref.c" />
+    <ClCompile Include="ECCcrypto.cpp" />
     <ClCompile Include="EncAndDec.cpp" />
     <ClCompile Include="SmallTools.cpp" />
-    <ClCompile Include="ECCcrypto.cpp" />
     <ClCompile Include="zxcvbn.cpp" />
   </ItemGroup>
   <ItemGroup>

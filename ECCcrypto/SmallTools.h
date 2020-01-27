@@ -20,8 +20,8 @@ size_t sLEN(unsigned char* len, size_t lenlen);
 
 wchar_t* getFileName();
 
-long getFileSize6(const char* strFileName);
+long long getFileSize6(const char* strFileName);
 
 char** split(char str[], const char* delim);
 
-uint8_t* scrypt_mini(uint8_t* psw, size_t pswlen, uint8_t* salt, size_t saltlen)
+uint8_t* scrypt_mini(uint8_t* psw, size_t pswlen, uint8_t* salt, size_t saltlen);

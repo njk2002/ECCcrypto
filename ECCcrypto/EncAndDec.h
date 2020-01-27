@@ -1,4 +1,5 @@
 #pragma once
+
 unsigned char* ENC(unsigned char* key, unsigned char* message);
 
 unsigned char* DEC(unsigned char* key, unsigned char* text);

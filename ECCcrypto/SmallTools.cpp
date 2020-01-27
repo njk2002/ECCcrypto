@@ -32,17 +32,17 @@ wchar_t* CharToWchar_t(char* psz)
 }
 wchar_t* chartowchar(char* pCStrKey)
 {
-    size_t pSize = MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, strlen(pCStrKey) + (size_t)1, NULL, 0);
+    int pSize = MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, (int)strlen(pCStrKey) + 1, NULL, 0);
     wchar_t* pWCStrKey = new wchar_t[pSize];
     //第二次调用将单字节字符串转换成双字节字符串
-    MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, strlen(pCStrKey) + (size_t)1, pWCStrKey, pSize);
+    MultiByteToWideChar(CP_OEMCP, 0, pCStrKey, (int)strlen(pCStrKey) + 1, pWCStrKey, pSize);
     return pWCStrKey;
 }
 char* wchartochar(wchar_t* pWCStrKey)
 {
     //第一次调用确认转换后单字节字符串的长度，用于开辟空间
-    size_t pSize = WideCharToMultiByte(CP_OEMCP, 0, pWCStrKey, (int)wcslen(pWCStrKey), NULL, 0, NULL, NULL);
-    char* pCStrKey = new char[pSize + 1];
+    int pSize = WideCharToMultiByte(CP_OEMCP, 0, pWCStrKey, (int)wcslen(pWCStrKey), NULL, 0, NULL, NULL);
+    char* pCStrKey = new char[(size_t)pSize + (size_t)1];
     //第二次调用将双字节字符串转换成单字节字符串
     WideCharToMultiByte(CP_OEMCP, 0, pWCStrKey, (int)wcslen(pWCStrKey), pCStrKey, pSize, NULL, NULL);
     pCStrKey[pSize] = '\0';
@@ -140,7 +140,7 @@ size_t sLEN(unsigned char* len,size_t lenlen) {
 
 
 
-long getFileSize6(const char* strFileName)
+long long getFileSize6(const char* strFileName)
 {
     std::ifstream in;
     in.open(strFileName, std::ios::binary);
@@ -207,7 +207,7 @@ void TrimSpace(char* str)
         --p;
     }
     memmove(str, start, end - start);
-    *(str + (int)end - (int)start) = 0;
+    *(str + (long long)end - (long long)start) = 0;
 }
 
 
@@ -257,6 +257,7 @@ char** split(char str[], const char* delim) {
 }
 
 uint8_t* scrypt_mini(uint8_t* psw, size_t pswlen,uint8_t* salt, size_t saltlen) {
+    
     uint8_t pswb[32];
     blake2s(pswb, 32, psw, pswlen, NULL, 0);
     uint8_t* prikey = new uint8_t[32];
